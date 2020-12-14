@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+//const
 var Client *mongo.Client
 
 //ConnectToDB connects to MongoDB with the given ip address
@@ -41,6 +42,8 @@ func Insert(database string, collection string, document Test_struct) (int, []by
 	return 201, []byte("201 - record created")
 }
 
+//checkError checks if there is an error thrown
+//if successMessage is empty, there will be no message displayed
 func checkError(e error, successMessage string) {
 	if e != nil {
 		fmt.Println(e)

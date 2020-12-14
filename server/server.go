@@ -2,16 +2,15 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func postChunk(w http.ResponseWriter, r *http.Request) {
+func PostChunk(w http.ResponseWriter, r *http.Request) {
 	var piID string = mux.Vars(r)["raspberryPiId"]
-	var document Test_struct // muss geändert werden
+	var document Test_struct // has to be changed
 	err := json.NewDecoder(r.Body).Decode(&document)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -24,7 +23,7 @@ func postChunk(w http.ResponseWriter, r *http.Request) {
 
 func postFile(w http.ResponseWriter, r *http.Request) {
 	var piID string = mux.Vars(r)["raspberryPiId"]
-	var document Test_struct // muss geändert werden
+	var document Test_struct // has to be changed
 	err := json.NewDecoder(r.Body).Decode(&document)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -45,15 +44,14 @@ func getAllData(w http.ResponseWriter, r *http.Request) {
 
 //SetupServer will set up a HTTP Server with given handler functions
 func SetupServer() {
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 
 	// Routes consist of a path and a handler function.
-	r.HandleFunc("/api/postData/{raspberryPiId}", postChunk).Methods("POST").Queries("format", "chunk").Headers("Content-Type", "application/json")
-	r.HandleFunc("/api/postData/{raspberryPiId}", postFile).Methods("POST").Queries("format", "file").Headers("Content-Type", "application/json")
-	r.HandleFunc("/api/getData/{raspberryPiId}", getData).Methods("GET").Headers("Content-Type", "application/json")
-	r.HandleFunc("/api/getAllData", getAllData).Methods("GET").Headers("Content-Type", "application/json")
-	fmt.Println("HTTP Server only")
+	router.HandleFunc("/api/postData/{raspberryPiId}", PostChunk).Methods("POST").Queries("format", "chunk").Headers("Content-Type", "application/json")
+	router.HandleFunc("/api/postData/{raspberryPiId}", postFile).Methods("POST").Queries("format", "file").Headers("Content-Type", "application/json")
+	router.HandleFunc("/api/getData/{raspberryPiId}", getData).Methods("GET").Headers("Content-Type", "application/json")
+	router.HandleFunc("/api/getAllData", getAllData).Methods("GET").Headers("Content-Type", "application/json")
 
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":8000", r))
+	log.Fatal(http.ListenAndServe(":8000", router))
 }
