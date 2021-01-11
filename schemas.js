@@ -6,16 +6,31 @@ const taskSchema = new mongoose.Schema({
     asdf: Number
 });
 
+const deviceSchema = new mongoose.Schema({
+    macAddress: String,
+    name: Number,
+    position: [Number],
+})
 
-/* add methods like this:
-*/
+const chunkSchema = new mongoose.Schema({
+    files_id: String,
+    n: Number,
+    data: [Buffer],
+})
 
-// taskSchema.methods.speak = function () {
-//   const greeting = this.title
-//     ? "Meow name is " + this.title
-//     : "I don't have a name";
-//   console.log(greeting);
-// }
+const fileSchema = new mongoose.Schema({
+    length: Number,
+    chunkSize: Number,
+    uploadDate: Number,
+    md5: String,
+	filename: String,
+	contentType: String,
+	aliases: [String],
+	metadate: Buffer //any
+})
 
 //export the mongoose model with the name Task (creates collection tasks)
-module.exports.task = mongoose.model('Task', taskSchema);
+exports.task = taskSchema
+exports.chunk = chunkSchema
+exports.file = fileSchema
+exports.device = deviceSchema
