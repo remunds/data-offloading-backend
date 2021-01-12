@@ -49,12 +49,12 @@ app.post('/api/postData/:raspberryPiId', async (req, res) => {
 
 app.get('/api/writeData/', async (req, res) => {
   const readStream = createReadStream('sample_video.mp4');
-  const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
+  const localDB = mongoose.connection.useDb('1')
   const File = createModel({
     modelName: 'File',
     connection: localDB
   })
-  const options = ({ filename: 'sample.txt', contentType: 'video/mp4' });
+  const options = ({ filename: 'sample_video.mp4', contentType: 'video/mp4' });
   File.write(options, readStream, (error, file) => {
     console.log(file);
   });
