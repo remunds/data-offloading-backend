@@ -31,6 +31,6 @@ const fileSchema = new mongoose.Schema({
 
 //export the mongoose model with the name Task (creates collection tasks)
 exports.task = taskSchema
-exports.chunk = chunkSchema
-exports.file = fileSchema
+exports.chunks = chunkSchema
+exports.files = fileSchema
 exports.device = deviceSchema

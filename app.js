@@ -8,6 +8,8 @@ app.use(express.json())
 const port = 8000
 
 const mongoose = require('mongoose');
+const { createModel } = require('mongoose-gridfs')
+const { createReadStream } = require('fs');
 
 //schemas
 const schemas = require('./schemas')
@@ -45,10 +47,55 @@ app.post('/api/postData/:raspberryPiId', async (req, res) => {
   }
 })
 
+app.get('/api/writeData/', async (req, res) => {
+  const readStream = createReadStream('sample_video.mp4');
+  const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
+  const File = createModel({
+    modelName: 'File',
+    connection: localDB
+  })
+  const options = ({ filename: 'sample.txt', contentType: 'video/mp4' });
+  File.write(options, readStream, (error, file) => {
+    console.log(file);
+  });
+  res.status(200).send()
+})
+
 app.get('/api/getData/:raspberryPiId', async (req, res) => {
+  const id = req.query.id
+  if(!id) {
+    res.status(400)
+    res.send({'error': 'range is missing'})
+  }
+  if(id < 0) {
+    res.status(400)
+    res.send()
+  }
+
   //connect to raspberryPiId
-  res.status(501)
-  res.send({ 'error': 'not implemented' })
+  const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
+  const fileModel = localDB.model('fs.file', schemas.files)
+  documents = await fileModel.find({}).skip(parseInt(id)).limit(1)
+  const File = createModel({
+    modelName: 'File',
+    connection: localDB
+  })
+
+  if(documents.length != 0){
+    for (var i = 0; i < documents.length; i++) {
+      File.findById(documents[i]._id, (error, attachment) => {
+        attachment.read((error, content) => {
+          console.log(documents[0].contentType)
+          res.type(documents[0].contentType)
+          res.send(content)
+        });
+      });
+    }
+  } else {
+    res.status(400)
+    res.send({'error': 'query exceeded range of collection'})
+  }
+  
 })
 
 //Gets position of existing Pi in Database
@@ -166,7 +213,7 @@ app.listen(port, () => {
 })
 
 //mongoose controls our mongodb
-mongoose.connect(`mongodb://192.168.0.64/${boxName}`, { useNewUrlParser: true });
+mongoose.connect(`mongodb://192.168.0.102/${boxName}`, { useNewUrlParser: true });
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'))
