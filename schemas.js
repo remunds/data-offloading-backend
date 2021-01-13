@@ -29,8 +29,14 @@ const fileSchema = new mongoose.Schema({
 	metadate: Buffer //any
 })
 
+const errorSchema = new mongoose.Schema({
+    timestamp: String,
+    error: String
+})
+
 //export the mongoose model with the name Task (creates collection tasks)
 exports.task = taskSchema
 exports.chunks = chunkSchema
 exports.files = fileSchema
 exports.device = deviceSchema
+exports.error = errorSchema
