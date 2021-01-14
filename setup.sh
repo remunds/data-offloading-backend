@@ -5,6 +5,7 @@ NC='\033[0m' # No Color
 #box = 1
 #backend = 2
 CONFIGURATION=1
+CONFIGURATIONTOML='~/dtn7-go/cmd/dtnd/configuration.toml'
 BACKEND='127.0.0.1:8000'
 
 #DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -37,7 +38,7 @@ else
 	echo -e "${GREEN}try to install go lang ${NC}"
 	wget $goLang
 	mkdir ~/go
-	sudo tar -C ~/go -xzf go1.15.6.linux-arm64.tar.gz
+	sudo tar -C ~/ -xzf go1.15.6.linux-arm64.tar.gz
 	rm go1.15.6.linux-arm64.tar.gz
 	sudo echo '' >> ~/.bashrc
 	sudo echo '#go' >> ~/.bashrc 
@@ -118,7 +119,7 @@ fi
 if [ $CONFIGURATION == 1 ];
 then
 	#register at backend
-	echo -e "${NC}register at backend ${NC}"
+	echo -e "${GREEN}register at backend ${GREEN}"
 	echo -e "${NC}install jq ${NC}"
 	sudo apt install jq
 	MAC=$(ip a  | awk '/link\/ether/ {print $2}')

@@ -264,10 +264,8 @@ app.get('/api/register/:macAddress', async (req, res) => {
   }
 })
 
-app.get('/api/test/', (res, req) => {
-  if (req.body.test == 2) {
-    res.send({ 'message': 'alles gucci' })
-  }
+app.get('/api/test/', (req, res) => {
+    res.status(200).send()
 })
 
 //custom error handling
@@ -291,7 +289,7 @@ app.listen(port, () => {
 })
 
 //mongoose controls our mongodb
-mongoose.connect(`mongodb://192.168.0.102/${boxName}`, { useNewUrlParser: true })
+mongoose.connect(`mongodb://192.168.0.64/${boxName}`, { useNewUrlParser: true })
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'))
