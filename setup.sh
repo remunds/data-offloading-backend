@@ -6,6 +6,7 @@ NC='\033[0m' # No Color
 #backend = 2
 CONFIGURATION=1
 CONFIGURATIONTOML='~/dtn7-go/cmd/dtnd/configuration.toml'
+
 BACKEND='127.0.0.1:8000'
 
 #DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -67,7 +68,7 @@ then
 		cd ~/dtn7-go
 		#go build ./cmd/dtn-tool
 		go build ./cmd/dtnd
-		echo 'export PATH=PATH:~/dtn7-go/' >> ~/.bashrc 
+		echo 'export PATH=$PATH:~/dtn7-go/' >> ~/.bashrc 
 		source ~/.bashrc
 		echo -e "${GREEN}dtn successfully installed${NC}"
 	fi
@@ -130,10 +131,12 @@ then
 	echo Port?
 	read answer
 	BACKEND=$BACKEND:$answer
-	
+	NAME=""
 	URL=$(echo $BACKEND'/api/register/'$MAC)
 	NAME=$(curl $URL | jq .nodeName)
 	echo boxname: $NAME
+	ORG='node-id = "dtn:\/\/node-name\/"'
+	TEMPLATE='node-id = "dtn:\/\/'$NAME'\/"'
 	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
 	
 	#install raspap-webgui
