@@ -5,7 +5,7 @@ NC='\033[0m' # No Color
 #box = 1
 #backend = 2
 CONFIGURATION=1
-CONFIGURATIONTOML='~/dtn7-go/cmd/dtnd/configuration.toml'
+CONFIGURATIONTOML=~/dtn7-go/cmd/dtnd/configuration.toml
 
 BACKEND='127.0.0.1:8000'
 
@@ -135,6 +135,7 @@ then
 	URL=$(echo $BACKEND'/api/register/'$MAC)
 	NAME=$(curl $URL | jq .nodeName)
 	echo boxname: $NAME
+
 	ORG='node-id = "dtn:\/\/node-name\/"'
 	TEMPLATE='node-id = "dtn:\/\/'$NAME'\/"'
 	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
