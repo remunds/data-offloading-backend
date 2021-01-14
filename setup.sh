@@ -19,8 +19,9 @@ then
 	sudo apt-get update
 	sudo apt-get dist-upgrade
 	sudo raspi-config nonint do_wifi_country
-	echo "ready to reboot? press enter to continue or ctrl c to abort"
+	echo "ready to reboot? You need to execute the setup script a second time. Press enter to continue or ctrl c to abort"
 	read
+	echo "until soon :)"
 	sudo reboot
 fi
 
@@ -33,9 +34,10 @@ then
 
 else
 	echo -e "${RED}go lang not found${NC}"
-	echo -e "${GREEN} try to install go lang ${NC}"
+	echo -e "${GREEN}try to install go lang ${NC}"
 	wget $goLang
-	tar -C ~/go -xzf go1.15.6.linux-arm64.tar.gz
+	mkdir ~/go
+	sudo tar -C ~/go -xzf go1.15.6.linux-arm64.tar.gz
 	rm go1.15.6.linux-arm64.tar.gz
 	sudo echo '' >> ~/.bashrc
 	sudo echo '#go' >> ~/.bashrc 
