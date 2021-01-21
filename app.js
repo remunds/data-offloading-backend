@@ -1,16 +1,19 @@
-//general settings
-const boxName = '0';
-
 //express server
 const express = require('express')
 const app = express()
 app.use(express.json())
-const port = 8000
-
 const mongoose = require('mongoose');
+mongoose.set('useFindAndModify', false);
 const { createModel } = require('mongoose-gridfs')
 const { createReadStream, unlinkSync } = require('fs');
-// const stream = require('stream');
+const axios = require('axios');
+
+//general settings
+const config = require('./config.js')
+const boxName = config.nodeName;
+const port = config.backendPort
+const dtnd = `${config.dtndIp}:${config.dtndPort}`
+var dtndUuid
 
 const fileUpload = require('express-fileupload');
 app.use(fileUpload({
@@ -33,41 +36,98 @@ function checkForJSON(req, res, next, expectedType) {
   next()
 }
 
+async function registerDtnd() {
+  axios({
+    method: 'post',
+    url: `http://${dtnd}/rest/register`,
+    data: {
+      "endpoint_id": "dtn://0/backend"
+    }
+  }).then((response) => {
+    console.log(response.data);
+    if (!response.data.err) {
+      dtndUuid = response.data.uuid
+      console.log("connected to dtnd");
+    } else {
+      console.log('cannot connect to dtnd')
+    }
+  }).catch((err) => {
+    console.log("cannot connect to dtnd");
+  })
+}
+
 //Posts Data from Pi to Backend
 //Example:
 //Query: /api/postData/1?format=chunk
 //Body: contains gridFS chunk JSON Data
+//has to be tested
 app.post('/api/postData/:raspberryPiId', (req, res, next) => {
   checkForJSON(req, res, next, contentType.json)
 },
   async (req, res) => {
     //connect to raspberryPiId
+    var successfullySent = false
     const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
     if (req.query.format == "chunk") {
-      const chunkModel = localDB.model('chunkModel', schemas.chunk)
-      await chunkModel.create(req.body).then((error) => {
+      const chunkModel = localDB.model('fs.chunk', schemas.chunk)
+      await chunkModel.findOneAndUpdate({"_id": req.body._id}, req.body, {upsert: true}).then((error) => {
         if (error) {
+          console.log(error);
           res.status(500)
           res.send({ "error": "chunk could not be saved" })
         } else {
-          res.send(200)
+          successfullySent = true
         }
       })
     } else if (req.query.format == "file") {
-      const fileModel = localDB.model('file', schemas.file)
-      await fileModel.create(req.body).then((error) => {
+      const fileModel = localDB.model('fs.file', schemas.file)
+      await fileModel.findOneAndUpdate({"_id": req.body._id}, req.body, {upsert: true}).then((error) => {
         if (error) {
           res.status(500)
           res.send({ "error": "file could not be saved" })
         } else {
-          res.send(200)
+          successfullySent = true
         }
       })
     } else {
       res.status(500)
       res.send({ "error": "format must be chunk or file" })
     }
+    if(successfullySent == true) {
+      axios({
+        method: 'post',
+        url: `http://${dtnd}/rest/build`,
+        data: {
+          "uuid": dtndUuid,
+          "arguments": {
+            "destination": `dtn://${req.params.raspberryPiId}/`,
+            "source": "dtn://1/backend",
+            "creation_timestamp_now": 1,
+            "lifetime": "24h",
+            "payload_block": {
+              "command": "delete",
+              "type": req.query.format,
+              "objectId": req.body._id
+            }
+          }
+        }
+      }).then((response) => {
+        // console.log(response.data);
+        if(response.data.error) {
+          res.status(500).send({"error": "somting went wrong"})
+        } else {
+          // console.log("deletion instruction sent");
+        res.status(200).send()
+        }
+      }).catch((err) => {
+        // console.log(err);
+        // console.log("not connected to dtnd");
+        res.status(503)
+        res.send({"error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send`})
+      })
+    }
   })
+
 //chunks Data and writes it to DB
 //Example:
 //Query: /api/writeData/
@@ -264,8 +324,39 @@ app.get('/api/register/:macAddress', async (req, res) => {
   }
 })
 
-app.get('/api/test/', (req, res) => {
+app.post('/api/test/', async (req, res) => {
+  deltionInstruction = { 
+    "command": "delete",
+    "type": "chunk",
+    "objectId": req.body._id 
+  }
+  axios({
+    method: 'post',
+    url: `http://${dtnd}/rest/build`,
+    data: {
+      "uuid": dtndUuid,
+      "arguments": {
+        "destination": `dtn://1/box`,
+        "source": "dtn://0/backend",
+        "creation_timestamp_now": 1,
+        "lifetime": "24h",
+        "payload_block": JSON.stringify(deltionInstruction)
+      }
+    }
+  }).then((response) => {
+    console.log(response.data);
+    if(response.data.error) {
+      res.status(500).send({"error": "somting went wrong"})
+    } else {
+      console.log("deletion instruction sent");
     res.status(200).send()
+    }
+  }).catch((err) => {
+    console.log(err);
+    console.log("not connected to dtnd");
+    res.status(503)
+    res.send({"error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send`})
+  })
 })
 
 //custom error handling
@@ -289,7 +380,7 @@ app.listen(port, () => {
 })
 
 //mongoose controls our mongodb
-mongoose.connect(`mongodb://192.168.0.64/${boxName}`, { useNewUrlParser: true })
+mongoose.connect(`mongodb://${config.dbIp}/${boxName}`, { useNewUrlParser: true })
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'))
@@ -298,3 +389,5 @@ db.once('open', () => {
   console.log('connected to db')
 
 });
+
+registerDtnd()

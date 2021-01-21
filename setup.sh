@@ -2,9 +2,9 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
-#box = 1
-#backend = 2
-CONFIGURATION=1
+#box = 0
+#backend = 1
+CONFIGURATION=0
 CONFIGURATIONTOML=~/dtn7-go/cmd/dtnd/configuration.toml
 
 BACKEND='127.0.0.1:8000'
@@ -117,7 +117,7 @@ else
 	fi
 fi
 
-if [ $CONFIGURATION == 1 ];
+if [ $CONFIGURATION == 0 ];
 then
 	#register at backend
 	echo -e "${GREEN}register at backend ${GREEN}"

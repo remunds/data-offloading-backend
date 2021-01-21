@@ -13,20 +13,22 @@ const deviceSchema = new mongoose.Schema({
 })
 
 const chunkSchema = new mongoose.Schema({
-    files_id: String,
+    _id: mongoose.Types.ObjectId,
+    files_id: mongoose.Types.ObjectId,
     n: Number,
     data: [Buffer],
 })
 
 const fileSchema = new mongoose.Schema({
+    _id: mongoose.Types.ObjectId,
     length: Number,
     chunkSize: Number,
-    uploadDate: Number,
+    uploadDate: Date,
     md5: String,
 	filename: String,
 	contentType: String,
 	aliases: [String],
-	metadate: Buffer //any
+	metadate: Object //any
 })
 
 const errorSchema = new mongoose.Schema({
@@ -36,7 +38,7 @@ const errorSchema = new mongoose.Schema({
 
 //export the mongoose model with the name Task (creates collection tasks)
 exports.task = taskSchema
-exports.chunks = chunkSchema
-exports.files = fileSchema
+exports.chunk = chunkSchema
+exports.file = fileSchema
 exports.device = deviceSchema
 exports.error = errorSchema
