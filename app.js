@@ -70,7 +70,7 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
     const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
     if (req.query.format == "chunk") {
       const chunkModel = localDB.model('fs.chunk', schemas.chunk)
-      await chunkModel.findOneAndUpdate({"_id": req.body._id}, req.body, {upsert: true}).then((error) => {
+      await chunkModel.findOneAndUpdate({ "_id": req.body._id }, req.body, { upsert: true }).then((error) => {
         if (error) {
           console.log(error);
           res.status(500)
@@ -81,7 +81,7 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
       })
     } else if (req.query.format == "file") {
       const fileModel = localDB.model('fs.file', schemas.file)
-      await fileModel.findOneAndUpdate({"_id": req.body._id}, req.body, {upsert: true}).then((error) => {
+      await fileModel.findOneAndUpdate({ "_id": req.body._id }, req.body, { upsert: true }).then((error) => {
         if (error) {
           res.status(500)
           res.send({ "error": "file could not be saved" })
@@ -93,7 +93,7 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
       res.status(500)
       res.send({ "error": "format must be chunk or file" })
     }
-    if(successfullySent == true) {
+    if (successfullySent == true) {
       axios({
         method: 'post',
         url: `http://${dtnd}/rest/build`,
@@ -113,17 +113,17 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
         }
       }).then((response) => {
         // console.log(response.data);
-        if(response.data.error) {
-          res.status(500).send({"error": "somting went wrong"})
+        if (response.data.error) {
+          res.status(500).send({ "error": "somting went wrong" })
         } else {
           // console.log("deletion instruction sent");
-        res.status(200).send()
+          res.status(200).send()
         }
       }).catch((err) => {
         // console.log(err);
         // console.log("not connected to dtnd");
         res.status(503)
-        res.send({"error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send`})
+        res.send({ "error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send` })
       })
     }
   })
@@ -149,11 +149,11 @@ app.post('/api/writeData/:raspberryPiId', async (req, res) => {
   await File.write(options, readStream, (error, file) => {
     if (!error) {
       res.status(200).send(req.body)
-      unlinkSync(req.files.sensor.tempFilePath, (err) => {
-        if (err) {
-          console.log("etwas ist schief gegeangen");
-        }
-      })
+    }
+  })
+  unlinkSync(req.files.sensor.tempFilePath, (err) => {
+    if (err) {
+      console.log("etwas ist schief gegeangen");
     }
   })
   console.log(req.files.sensor.tempFilePath);
@@ -325,10 +325,10 @@ app.get('/api/register/:macAddress', async (req, res) => {
 })
 
 app.post('/api/test/', async (req, res) => {
-  deltionInstruction = { 
+  deltionInstruction = {
     "command": "delete",
     "type": "chunk",
-    "objectId": req.body._id 
+    "objectId": req.body._id
   }
   axios({
     method: 'post',
@@ -345,17 +345,17 @@ app.post('/api/test/', async (req, res) => {
     }
   }).then((response) => {
     console.log(response.data);
-    if(response.data.error) {
-      res.status(500).send({"error": "somting went wrong"})
+    if (response.data.error) {
+      res.status(500).send({ "error": "somting went wrong" })
     } else {
       console.log("deletion instruction sent");
-    res.status(200).send()
+      res.status(200).send()
     }
   }).catch((err) => {
     console.log(err);
     console.log("not connected to dtnd");
     res.status(503)
-    res.send({"error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send`})
+    res.send({ "error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send` })
   })
 })
 
