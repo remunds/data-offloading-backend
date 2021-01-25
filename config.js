@@ -1,6 +1,6 @@
 module.exports = {
-    //backend server 0
-    //sensorbox 1
+    //sensorbox 0
+    //backend server 1
     "configuration": 0,
     "nodeName": 0,
     "backendIp": "192.168.0.206",
