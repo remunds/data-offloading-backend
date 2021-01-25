@@ -118,7 +118,7 @@ else
 fi
 
 #sensorbox
-if [ $CONFIGURATION == 0 ];
+if [$CONFIGURATION == 0];
 then
 	#register at backend
 	echo -e "${GREEN}register at backend ${GREEN}"
@@ -140,12 +140,7 @@ then
 	ORG='node-id = "dtn:\/\/node-name\/"'
 	TEMPLATE='node-id = "dtn:\/\/'$NAME'\/"'
 	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
-	
-fi
 
-#backend
-if [$CONFIGURATION == 1];
-then
 	#install raspap-webgui
 	echo -e "${NC}install raspap-webgui${NC}"
 	curl -sL https://install.raspap.com | bash
