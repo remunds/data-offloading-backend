@@ -125,12 +125,12 @@ then
 	sudo apt install jq
 	MAC=$(ip a  | awk '/link\/ether/ {print $2}')
 
-	echo Which IP does the backend server have?
-	read answer
-	BACKEND=$answer
-	echo Port?
-	read answer
-	BACKEND=$BACKEND:$answer
+	# echo Which IP does the backend server have?
+	# read answer
+	BACKEND=jq .backendIp
+	# echo Port?
+	# read answer
+	BACKEND=$BACKEND:jq .backendPort
 	NAME=""
 	URL=$(echo $BACKEND'/api/register/'$MAC)
 	NAME=$(curl $URL | jq .nodeName)
