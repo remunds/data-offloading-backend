@@ -28,6 +28,7 @@ contentType = {
   'json': 'application/json'
 }
 
+//check if the request body is in JSON format 
 function checkForJSON(req, res, next, expectedType) {
   if (!req.is(expectedType)) {
     res.status(415)
@@ -36,6 +37,8 @@ function checkForJSON(req, res, next, expectedType) {
   next()
 }
 
+
+//registers at dtnd rest server and gets the uuid
 async function registerDtnd() {
   axios({
     method: 'post',
@@ -71,23 +74,12 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
     if (req.query.format == "chunk") {
       const chunkModel = localDB.model('fs.chunk', schemas.chunk)
       await chunkModel.findOneAndUpdate({ "_id": req.body._id }, req.body, { upsert: true }).then((error) => {
-        if (error) {
-          console.log(error);
-          res.status(500)
-          res.send({ "error": "chunk could not be saved" })
-        } else {
-          successfullySent = true
-        }
+        successfullySent = true
       })
     } else if (req.query.format == "file") {
       const fileModel = localDB.model('fs.file', schemas.file)
       await fileModel.findOneAndUpdate({ "_id": req.body._id }, req.body, { upsert: true }).then((error) => {
-        if (error) {
-          res.status(500)
-          res.send({ "error": "file could not be saved" })
-        } else {
-          successfullySent = true
-        }
+        successfullySent = true
       })
     } else {
       res.status(500)
@@ -100,21 +92,21 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
         data: {
           "uuid": dtndUuid,
           "arguments": {
-            "destination": `dtn://${req.params.raspberryPiId}/`,
-            "source": "dtn://1/backend",
+            "destination": `dtn://${req.params.raspberryPiId}/box`,
+            "source": "dtn://0/backend",
             "creation_timestamp_now": 1,
             "lifetime": "24h",
-            "payload_block": {
+            "payload_block": JSON.stringify({
               "instruction": "delete",
               "type": req.query.format,
               "objectId": req.body._id
-            }
+            })
           }
         }
       }).then((response) => {
         // console.log(response.data);
         if (response.data.error) {
-          res.status(500).send({ "error": "somting went wrong" })
+          res.status(500).send({ "error": "somthing went wrong" })
         } else {
           // console.log("deletion instruction sent");
           res.status(200).send()
@@ -322,41 +314,6 @@ app.get('/api/register/:macAddress', async (req, res) => {
       res.status(500)
     }
   }
-})
-
-app.post('/api/test/', async (req, res) => {
-  deltionInstruction = {
-    "command": "delete",
-    "type": "chunk",
-    "objectId": req.body._id
-  }
-  axios({
-    method: 'post',
-    url: `http://${dtnd}/rest/build`,
-    data: {
-      "uuid": dtndUuid,
-      "arguments": {
-        "destination": `dtn://1/box`,
-        "source": "dtn://0/backend",
-        "creation_timestamp_now": 1,
-        "lifetime": "24h",
-        "payload_block": JSON.stringify(deltionInstruction)
-      }
-    }
-  }).then((response) => {
-    console.log(response.data);
-    if (response.data.error) {
-      res.status(500).send({ "error": "somting went wrong" })
-    } else {
-      console.log("deletion instruction sent");
-      res.status(200).send()
-    }
-  }).catch((err) => {
-    console.log(err);
-    console.log("not connected to dtnd");
-    res.status(503)
-    res.send({ "error": `chunk saved in db but could not etablish connection to dtnd server. No deletion command was send` })
-  })
 })
 
 //custom error handling
