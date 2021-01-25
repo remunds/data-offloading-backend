@@ -2,7 +2,7 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
-#box = 0
+#sensorbox = 0
 #backend = 1
 CONFIGURATION=0
 CONFIGURATIONTOML=~/dtn7-go/cmd/dtnd/configuration.toml
@@ -49,7 +49,7 @@ else
 	then
 		echo -e "${GREEN}successfully installed go lang ${NC}"
 	else
-		echo -e "${RED}failed to install go lang${NC}"
+		echo -e "${RED}did not find go lang, maybe you have to source the .bashrc${NC}"
 	fi
 fi
 
@@ -117,6 +117,7 @@ else
 	fi
 fi
 
+#sensorbox
 if [ $CONFIGURATION == 0 ];
 then
 	#register at backend
@@ -140,6 +141,11 @@ then
 	TEMPLATE='node-id = "dtn:\/\/'$NAME'\/"'
 	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
 	
+fi
+
+#backend
+if [$CONFIGURATION == 1];
+then
 	#install raspap-webgui
 	echo -e "${NC}install raspap-webgui${NC}"
 	curl -sL https://install.raspap.com | bash
