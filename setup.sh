@@ -53,7 +53,7 @@ fi
 #install dtn7
 if command -v go &> /dev/null
 then
-	#ich denke dass das nicht reicht damit dass der merkt, dass es installiert ist
+	#ich denke dass das nicht reicht damit dass der merkt, dass es installiert ist, wird auch ein fehler geworfen
 	if command -v dtn &> /dev/nukk
 	then
 		echo -e "${GREEN}dtn already installed${NC}"
@@ -115,7 +115,7 @@ else
 fi
 
 #sensorbox
-if [$CONFIGURATION == 0];
+if [ $CONFIGURATION == 0 ];
 then
 	#register at backend
 	echo -e "${GREEN}register at backend ${GREEN}"
@@ -138,7 +138,7 @@ then
 	curl -sL https://install.raspap.com | bash
 fi
 
-if [$CONFIGURATION == 1];
+if [ $CONFIGURATION == 1 ];
 then
 	ORG='node-id = "dtn:\/\/node-name\/"'
 	TEMPLATE='node-id = "dtn:\/\/0\/"'

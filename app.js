@@ -9,7 +9,7 @@ const { createReadStream, unlinkSync } = require('fs');
 const axios = require('axios');
 
 //general settings
-const config = require('./config.js')
+const config = require('./config.json')
 const boxName = config.nodeName;
 const port = config.backendPort
 const dtnd = `${config.dtndIp}:${config.dtndPort}`
@@ -105,7 +105,7 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
             "creation_timestamp_now": 1,
             "lifetime": "24h",
             "payload_block": {
-              "command": "delete",
+              "instruction": "delete",
               "type": req.query.format,
               "objectId": req.body._id
             }
