@@ -2,9 +2,6 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
-#sensorbox = 0
-#backend = 1
-CONFIGURATION=0
 CONFIGURATIONTOML=~/dtn7-go/cmd/dtnd/configuration.toml
 
 BACKEND='127.0.0.1:8000'
@@ -39,11 +36,11 @@ else
 	echo -e "${GREEN}try to install go lang ${NC}"
 	wget $goLang
 	mkdir ~/go
-	sudo tar -C ~/ -xzf go1.15.6.linux-arm64.tar.gz
+	tar -C ~/ -xzf go1.15.6.linux-arm64.tar.gz
 	rm go1.15.6.linux-arm64.tar.gz
-	sudo echo '' >> ~/.bashrc
-	sudo echo '#go' >> ~/.bashrc 
-	sudo echo 'export PATH=$PATH:~/go/bin' >> ~/.bashrc 
+	echo '' >> ~/.bashrc
+	echo '#go' >> ~/.bashrc 
+	echo 'export PATH=$PATH:~/go/bin' >> ~/.bashrc 
 	source ~/.bashrc
 	if command -v go &> /dev/null
 	then
@@ -125,13 +122,8 @@ then
 	echo -e "${NC}install jq ${NC}"
 	sudo apt install jq
 	MAC=$(ip a  | awk '/link\/ether/ {print $2}')
-
-	# echo Which IP does the backend server have?
-	# read answer
-	BACKEND=jq .backendIp
-	# echo Port?
-	# read answer
-	BACKEND=$BACKEND:jq .backendPort
+	BACKEND=cat config.json | jq '.backendIp'
+	BACKEND=$BACKEND: cat config.json | jq '.backendPort' 
 	NAME=""
 	URL=$(echo $BACKEND'/api/register/'$MAC)
 	NAME=$(curl $URL | jq .nodeName)
@@ -144,4 +136,11 @@ then
 	#install raspap-webgui
 	echo -e "${NC}install raspap-webgui${NC}"
 	curl -sL https://install.raspap.com | bash
+fi
+
+if [$CONFIGURATION == 1];
+then
+	ORG='node-id = "dtn:\/\/node-name\/"'
+	TEMPLATE='node-id = "dtn:\/\/0\/"'
+	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
 fi
