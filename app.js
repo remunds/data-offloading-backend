@@ -29,10 +29,14 @@ const contentType = {
 }
 
 // check if the request body is in JSON format
+// If the current middleware function does not end the request-response cycle, 
+// it must call next() to pass control to the next middleware function. 
+// Otherwise, the request will be left hanging.
 function checkForJSON (req, res, next, expectedType) {
   if (!req.is(expectedType)) {
     res.status(415)
     res.send({ error: 'wrong content type' })
+    return
   }
   next()
 }
