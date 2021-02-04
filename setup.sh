@@ -129,6 +129,7 @@ then
 	NAME=$(curl $URL | jq .nodeName)
 	echo boxname: $NAME
 
+	jq ".nodeName |= $NAME" config_default.json  > config.json
 	ORG='node-id = "dtn:\/\/node-name\/"'
 	TEMPLATE='node-id = "dtn:\/\/'$NAME'\/"'
 	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
@@ -138,6 +139,7 @@ then
 	curl -sL https://install.raspap.com | bash
 fi
 
+#backend
 if [ $CONFIGURATION == 1 ];
 then
 	ORG='node-id = "dtn:\/\/node-name\/"'
