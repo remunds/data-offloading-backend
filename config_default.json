@@ -1,7 +1,7 @@
 {
     "__sensorbox": 0,
     "__backendServer": 1,
-    "configuration": 0,
+    "configuration": 1,
     "nodeName": 0,
     "backendIp": "-1",
     "backendPort": 8000,
