@@ -9,8 +9,9 @@ const { createReadStream, unlinkSync } = require('fs')
 const axios = require('axios')
 
 // general settings
+var config
 try {
-  const config = require('./config.json') 
+  config = require('./config.json') 
 } catch (err) {
   console.log('no config file available. Did you run setup.sh?')
   return
@@ -279,7 +280,7 @@ app.post('/api/setPosition/:raspberryPiId', (req, res, next) => {
 // Query: /api/register/30:9c:23:de:b0:22
 
 app.get('/api/register/:macAddress', async (req, res) => {
-  const rePattern = '/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/'
+  const rePattern = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
   const deviceMacAddress = req.params.macAddress
 
   // checks if a mac address was sent
@@ -309,7 +310,7 @@ app.get('/api/register/:macAddress', async (req, res) => {
       macAddress: deviceMacAddress,
       name: name,
       position: [0, 0]
-    }).Save()
+    }).save()
     if (record) {
       res.status(201)
       res.send({ nodeName: name })
