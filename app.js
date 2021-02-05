@@ -2,7 +2,6 @@
 const express = require('express')
 const app = express()
 app.use(express.json({ limit: '25mb' }))
-// app.use(express.urlencoded({limit: '25mb'}));
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false)
 const { createModel } = require('mongoose-gridfs')
@@ -365,10 +364,6 @@ db.once('open', () => {
   // we're connected!
   console.log('connected to db')
 })
-try {
-  registerDtnd()
-} catch (e) {
-  console.log('no connection to dtnd, did you start the dtnd server?')
-}
+registerDtnd()
 
 module.exports = server

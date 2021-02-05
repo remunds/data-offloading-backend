@@ -151,3 +151,6 @@ then
 	sed -i "s/$ORG/$TEMPLATE/" $CONFIGURATIONTOML
 	jq ".nodeName |= 0" /home/pi/data-offloading-backend/config_default.json  > /home/pi/data-offloading-backend/config.json
 fi
+
+cd /home/pi/data-offloading-backend/
+npm install
