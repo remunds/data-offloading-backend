@@ -1,0 +1,13 @@
+[Unit]
+Description=mobile data offloading main server
+After=network.target
+
+[Service]
+Type=simple
+Environment=NODE_PORT=8000
+Restart=on-failure
+RestartSec=3
+ExecStart=/usr/bin/node /home/pi/data-offloading-backend/app.js
+
+[Install]
+WantedBy=multi-user.target

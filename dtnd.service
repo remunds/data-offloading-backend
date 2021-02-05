@@ -1,0 +1,13 @@
+[Unit]
+Description=dtnd7-go http rest server
+After=network.target
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=3
+WorkingDirectory=/home/pi/dtn7-go
+ExecStart=/home/pi/dtn7-go/dtnd cmd/dtnd/configuration.toml
+
+[Install]
+WantedBy=multi-user.target"
