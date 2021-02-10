@@ -9,7 +9,13 @@ const { createReadStream, unlinkSync } = require('fs')
 const axios = require('axios')
 
 // general settings
-const config = require('./config.json')
+var config
+try {
+  config = require('./config.json') 
+} catch (err) {
+  console.log('no config file available. Did you run setup.sh?')
+  return
+}
 const boxName = config.nodeName
 const port = config.backendPort
 const dtnd = `${config.dtndIp}:${config.dtndPort}`
@@ -32,7 +38,7 @@ const contentType = {
 // If the current middleware function does not end the request-response cycle, 
 // it must call next() to pass control to the next middleware function. 
 // Otherwise, the request will be left hanging.
-function checkForJSON (req, res, next, expectedType) {
+function checkForJSON(req, res, next, expectedType) {
   if (!req.is(expectedType)) {
     res.status(415)
     res.send({ error: 'wrong content type' })
@@ -42,7 +48,7 @@ function checkForJSON (req, res, next, expectedType) {
 }
 
 // registers at dtnd rest server and gets the uuid
-async function registerDtnd () {
+async function registerDtnd() {
   axios({
     method: 'post',
     url: `http://${dtnd}/rest/register`,
@@ -70,57 +76,57 @@ async function registerDtnd () {
 app.post('/api/postData/:raspberryPiId', (req, res, next) => {
   checkForJSON(req, res, next, contentType.json)
 },
-async (req, res) => {
-  // connect to raspberryPiId
-  let successfullySent = false
-  const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
-  if (req.query.format === 'chunk') {
-    const chunkModel = localDB.model('fs.chunk', schemas.chunk)
-    await chunkModel.findOneAndUpdate({ _id: req.body._id }, req.body, { upsert: true }).then(() => {
-      successfullySent = true
-    })
-  } else if (req.query.format === 'file') {
-    const fileModel = localDB.model('fs.file', schemas.file)
-    await fileModel.findOneAndUpdate({ _id: req.body._id }, req.body, { upsert: true }).then(() => {
-      successfullySent = true
-    })
-  } else {
-    res.status(500)
-    res.send({ error: 'format must be chunk or file' })
-  }
-  if (successfullySent === true) {
-    axios({
-      method: 'post',
-      url: `http://${dtnd}/rest/build`,
-      data: {
-        uuid: dtndUuid,
-        arguments: {
-          destination: `dtn://${req.params.raspberryPiId}/box`,
-          source: 'dtn://0/backend',
-          creation_timestamp_now: 1,
-          lifetime: '24h',
-          payload_block: JSON.stringify({
-            instruction: 'delete',
-            type: req.query.format,
-            objectId: req.body._id
-          })
+  async (req, res) => {
+    // connect to raspberryPiId
+    let successfullySent = false
+    const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
+    if (req.query.format === 'chunk') {
+      const chunkModel = localDB.model('fs.chunk', schemas.chunk)
+      await chunkModel.findOneAndUpdate({ _id: req.body._id }, req.body, { upsert: true }).then(() => {
+        successfullySent = true
+      })
+    } else if (req.query.format === 'file') {
+      const fileModel = localDB.model('fs.file', schemas.file)
+      await fileModel.findOneAndUpdate({ _id: req.body._id }, req.body, { upsert: true }).then(() => {
+        successfullySent = true
+      })
+    } else {
+      res.status(500)
+      res.send({ error: 'format must be chunk or file' })
+    }
+    if (successfullySent === true) {
+      axios({
+        method: 'post',
+        url: `http://${dtnd}/rest/build`,
+        data: {
+          uuid: dtndUuid,
+          arguments: {
+            destination: `dtn://${req.params.raspberryPiId}/box`,
+            source: 'dtn://0/backend',
+            creation_timestamp_now: 1,
+            lifetime: '24h',
+            payload_block: JSON.stringify({
+              instruction: 'delete',
+              type: req.query.format,
+              objectId: req.body._id
+            })
+          }
         }
-      }
-    }).then((response) => {
-      // console.log(response.data);
-      if (response.data.error) {
-        res.status(500).send({ error: 'somthing went wrong' })
-      } else {
-        res.status(200).send()
-      }
-    }).catch((err) => {
-      console.log(err)
-      console.log('not connected to dtnd')
-      res.status(503)
-      res.send({ error: 'chunk saved in db but could not etablish connection to dtnd server. No deletion command was send' })
-    })
-  }
-})
+      }).then((response) => {
+        // console.log(response.data);
+        if (response.data.error) {
+          res.status(500).send({ error: 'somthing went wrong' })
+        } else {
+          res.status(200).send()
+        }
+      }).catch((err) => {
+        console.log(err)
+        console.log('not connected to dtnd')
+        res.status(503)
+        res.send({ error: 'chunk saved in db but could not etablish connection to dtnd server. No deletion command was send' })
+      })
+    }
+  })
 
 // chunks Data and writes it to DB
 // Example:
@@ -230,51 +236,51 @@ app.get('/api/getPosition/:raspberryPiId', async (req, res) => {
 app.post('/api/setPosition/:raspberryPiId', (req, res, next) => {
   checkForJSON(req, res, next, contentType.json)
 },
-async (req, res, next) => {
-  const deviceId = req.params.raspberryPiId
-  const position = req.body.position
-  if (!position) {
-    res.status(400)
-    res.send({ error: 'no position given' })
-  }
-  if (position.length === 2) {
-    // Latitude is between -90 and 90 degrees
-    if (position[0] > 90 || position[0] < -90) {
-      res.status(500)
-      res.send({ error: 'Latitude not between -90 and 90 degrees' })
-      return
+  async (req, res, next) => {
+    const deviceId = req.params.raspberryPiId
+    const position = req.body.position
+    if (!position) {
+      res.status(400)
+      res.send({ error: 'no position given' })
     }
-
-    // Longitude is between -180 and 180 degrees
-    if (position[1] > 180 || position[1] < -180) {
-      res.status(500)
-      res.send({ error: 'Longitude not between -180 and 180 degrees' })
-      return
-    }
-    // connect to pi0
-    const localDB = mongoose.connection.useDb(boxName)
-    const deviceModel = localDB.model('device', schemas.device)
-    await deviceModel.updateOne({ name: deviceId }, { position: position }).then((error) => {
-      if (error.n !== error.ok) {
+    if (position.length === 2) {
+      // Latitude is between -90 and 90 degrees
+      if (position[0] > 90 || position[0] < -90) {
         res.status(500)
-        res.send({ error: 'an error has occured at updating' })
-      } else {
-        res.status(200)
-        res.send()
+        res.send({ error: 'Latitude not between -90 and 90 degrees' })
+        return
       }
-    })
-  } else {
-    res.status(400)
-    res.send({ error: 'invaild position' })
-  }
-})
+
+      // Longitude is between -180 and 180 degrees
+      if (position[1] > 180 || position[1] < -180) {
+        res.status(500)
+        res.send({ error: 'Longitude not between -180 and 180 degrees' })
+        return
+      }
+      // connect to pi0
+      const localDB = mongoose.connection.useDb(boxName)
+      const deviceModel = localDB.model('device', schemas.device)
+      await deviceModel.updateOne({ name: deviceId }, { position: position }).then((error) => {
+        if (error.n !== error.ok) {
+          res.status(500)
+          res.send({ error: 'an error has occured at updating' })
+        } else {
+          res.status(200)
+          res.send()
+        }
+      })
+    } else {
+      res.status(400)
+      res.send({ error: 'invaild position' })
+    }
+  })
 
 // registers Pi to Backend
 // Example:
 // Query: /api/register/30:9c:23:de:b0:22
 
 app.get('/api/register/:macAddress', async (req, res) => {
-  const rePattern = '/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/'
+  const rePattern = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
   const deviceMacAddress = req.params.macAddress
 
   // checks if a mac address was sent
@@ -304,7 +310,7 @@ app.get('/api/register/:macAddress', async (req, res) => {
       macAddress: deviceMacAddress,
       name: name,
       position: [0, 0]
-    }).Save()
+    }).save()
     if (record) {
       res.status(201)
       res.send({ nodeName: name })
