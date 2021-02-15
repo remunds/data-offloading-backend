@@ -1,6 +1,6 @@
 const supertest = require("supertest");
 const should = require("should");
-const server = supertest.agent("http://localhost:8001");
+const server = supertest.agent("http://localhost:8000");
 
 function createMacAdress() {
     return (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
@@ -19,7 +19,7 @@ function createMacAdress() {
 
 var macAddress = createMacAdress()
 //getPostion test
-describe("getPosition", () => {
+describe("Position", () => {
     it("setPosition from Pi", (done) => {
         server
             .post('/api/setPosition/1')
@@ -36,18 +36,34 @@ describe("getPosition", () => {
             })
     })
 
-    it("setPosition from Pi out of boundary", (done) => {
+    it("set Latitude without limit", (done) => {
         server
-            .post('/api/setPosition/1')
+            .post('/api/setPosition/2')
             .send({
-                "position": [
-                    -180.232223,
-                    -23.2323
-                ]
+                position:
+                    [100,
+                        0]
             })
             .end((err, res) => {
                 should.not.exist(err)
                 res.status.should.equal(500)
+                res.body.error.should.equal('Latitude not between -90 and 90 degrees')
+                done()
+            })
+    })
+
+    it("set Longitude without limit", (done) => {
+        server
+            .post('/api/setPosition/3')
+            .send({
+                position:
+                    [40,
+                        200]
+            })
+            .end((err, res) => {
+                should.not.exist(err)
+                res.status.should.equal(500)
+                res.body.error.should.equal('Longitude not between -180 and 180 degrees')
                 done()
             })
     })
@@ -121,10 +137,23 @@ describe("register", () => {
 
 })
 
+describe("writeData", () => {
+    it("write Data", (done) => {
+        server
+            .post('/api/postData/' + 1)
+            .attach("sensor", "./Mobile Data Offloading QS.pdf")
+            .end((err, res) => {
+                should.not.exist(err)
+                res.status.should.equal(200)
+                done()
+            })
+    })
+})
+
 describe("postData", () => {
     it("post chunk to backend", (done) => {
         server
-            .post('/api/postData/' + 1 + '/format=chunk')
+            .post('/api/postData/' + 1 + '?format=chunk')
             .send({
                 "_id": "602402bb832b602575ea91e2",
                 "files_id": "602402bb832b602575ea91df",
@@ -140,7 +169,7 @@ describe("postData", () => {
 
     it("post files to backend", (done) => {
         server
-            .post('/api/postData/' + 1 + '/format=chunk')
+            .post('/api/postData/' + 1 + '?format=chunk')
             .send({
                 "_id": "602403aa51dd022939c6c2bb",
                 "length": 91003,
@@ -157,93 +186,38 @@ describe("postData", () => {
             })
     })
 })
-//nicht fertig
-describe("writeData", () => {
-    it("")
-})
 
 describe("getData", () => {
     it("get Data", (done) => {
         server
-            .get('/api/getData/1?id=0')
+            .get('/api/getData/1?id=1')
             .end((err, res) => {
                 should.not.exist(err)
                 res.status.should.equal(200)
-                res.body.should.not.eqaul(null)
+                res.body.should.not.equal(null)
                 done()
             })
     })
-})
-//nicht fertig
-describe("Position", () => {
-    it("set Position within limit", (done) => {
+
+    it("get Data without range", (done) => {
         server
-            .post('/api/setPosition/1')
-            .send({position: 
-                [85,
-                 15]
-            })
+            .get('/api/getData/500')
             .end((err, res) => {
                 should.not.exist(err)
-                res.status.should.equal(200)
+                res.status.should.equal(400)
+                res.body.error.should.equal('range is missing')
                 done()
             })
     })
 
-    it("set Latitude without limit", (done) => {
+    it("get Data out of range", (done) => {
         server
-            .post('/api/setPosition/2')
-            .send({position: 
-                [100,
-                 0]
-            })
+            .get('/api/getData/1?id=500')
             .end((err, res) => {
                 should.not.exist(err)
-                res.status.should.equal(500)
-                res.body.should.eqaul({ error: 'Latitude not between -90 and 90 degrees' })
+                res.status.should.equal(400)
+                res.body.error.should.equal('query exceeded range of collection')
                 done()
             })
-    })
-
-    it("set Longitude without limit", (done) => {
-        server
-            .post('/api/setPosition/3')
-            .send({position: 
-                [40,
-                 200]
-            })
-            .end((err, res) => {
-                should.not.exist(err)
-                res.status.should.equal(500)
-                res.body.should.eqaul({ error: 'Longitude not between -180 and 180 degrees' })
-                done()
-            })
-    })
-
-    it("get Position successfully", (done) => {
-        server
-        .get('/api/getPosition/1')
-        .end((err, res) => {
-            should.not.exist(err)
-            res.status.should.equal(200)
-            res.body.should.eqaul({
-                position: [
-                    85,
-                    15
-                ]
-            })
-            done()
-        })
-    })
-
-    it("get Position with not existing id", (done) => {
-        server
-        .get('/api/getPosition/2')
-        .end((err, res) => {
-            should.not.exist(err)
-            res.status.should.equal(500)
-            res.body.should.eqaul({ error: 'device or position not found' })
-            done()
-        })
     })
 })
