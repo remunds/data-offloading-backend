@@ -140,8 +140,8 @@ describe("register", () => {
 describe("writeData", () => {
     it("write Data", (done) => {
         server
-            .post('/api/postData/' + 1)
-            .attach("sensor", "./Mobile Data Offloading QS.pdf")
+            .post('/api/writeData/' + 1)
+            .attach("sensor", "test/Mobile_Data_Offloading_QS.pdf")
             .end((err, res) => {
                 should.not.exist(err)
                 res.status.should.equal(200)
@@ -201,7 +201,7 @@ describe("getData", () => {
 
     it("get Data without range", (done) => {
         server
-            .get('/api/getData/500')
+            .get('/api/getData/1')
             .end((err, res) => {
                 should.not.exist(err)
                 res.status.should.equal(400)

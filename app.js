@@ -2,15 +2,17 @@
 const express = require('express')
 const app = express()
 app.use(express.json({limit: '25mb'}));
-app.use(express.urlencoded({limit: '25mb'}));
+// app.use(express.urlencoded({limit: '25mb'}));
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false)
 const { createModel } = require('mongoose-gridfs')
-const { createReadStream, unlinkSync } = require('fs')
+const { createReadStream, unlink } = require('fs')
 const axios = require('axios')
 
 // general settings
 var config
+var dtndConnection = false
+
 try {
   config = require('./config.json') 
 } catch (err) {
@@ -22,12 +24,10 @@ const port = config.backendPort
 const dtnd = `${config.dtndIp}:${config.dtndPort}`
 let dtndUuid
 
-const fileUpload = require('express-fileupload')
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: './tmp/'
-}))
+const multer = require('multer')
 
+// uploaded files are saved to the uploads directory to handle multipart data
+const upload = multer({ dest: 'uploads/' })
 // schemas
 const schemas = require('./schemas')
 
@@ -60,6 +60,7 @@ async function registerDtnd() {
     console.log(response.data)
     if (!response.data.err) {
       dtndUuid = response.data.uuid
+      dtndConnection = true
       console.log('connected to dtnd')
     } else {
       console.log('cannot connect to dtnd')
@@ -95,7 +96,7 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
       res.status(500)
       res.send({ error: 'format must be chunk or file' })
     }
-    if (successfullySent === true) {
+    if (successfullySent === true && dtndConnection) {
       axios({
         method: 'post',
         url: `http://${dtnd}/rest/build`,
@@ -133,31 +134,44 @@ app.post('/api/postData/:raspberryPiId', (req, res, next) => {
 // Example:
 // Query: /api/writeData/
 // Body: contains file as form-data type: 'file' and name: 'sensor'
-app.post('/api/writeData/:raspberryPiId', async (req, res) => {
-  if (!req.files) {
-    res.status(400)
-    res.send({ error: 'no file' })
+app.post('/api/writeData/:raspberryPiId', upload.single('sensor'), async (req, res) => {
+  if(!req.params.raspberryPiId){
+    res.status(500).send()
     return
-  }
-  // unnecessary for box
-  const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
-  const File = createModel({
-    modelName: 'File',
+  } 
+  const localDB = mongoose.connection.useDb(req.params.raspberryPiId) 
+  // create model so that our collections are called fs.files and fs.chunks
+  const fs = createModel({
+    modelName: 'fs',
     connection: localDB
   })
-  const readStream = createReadStream(req.files.sensor.tempFilePath)
-  const options = ({ filename: req.files.sensor.name, contentType: req.files.sensor.mimetype })
-  await File.write(options, readStream, (error, file) => {
-    if (!error) {
-      res.status(200).send(req.body)
+
+  const File = localDB.model('fs.file', schemas.file)
+  const Chunk = localDB.model('fs.chunk', schemas.chunk)
+  // write file to db
+  console.log(req.sensor != null)
+  if(req.file == null){
+    res.status(500).send()
+    return
+  }
+  const readStream = createReadStream(req.file.path)
+  const options = ({ filename: req.file.originalname, contentType: req.file.mimetype })
+  await fs.write(options, readStream, async (error, file) => {
+    if (error) {
+      res.status(500).send({ error: 'could not chunk file' })
     }
+    console.log('wrote file with id: ' + file._id)
+    // add the field downloads to file and chunks; add timestamp to chunk
+    File.findByIdAndUpdate(file._id, { downloads: 0 }).exec()
+    Chunk.updateMany({ files_id: file._id }, { downloads: 0, timestamp: Date.now() }).exec()
+    unlink(req.file.path, (err) => {
+      if (err) {
+        res.status(500).send({ error: 'could not delete tmp file' })
+      } else {
+        res.status(200).send({ error: '' })
+      }
+    })
   })
-  unlinkSync(req.files.sensor.tempFilePath, (err) => {
-    if (err) {
-      console.log('etwas ist schief gegeangen')
-    }
-  })
-  console.log(req.files.sensor.tempFilePath)
 })
 
 // gets one File from certain Pi
@@ -351,5 +365,8 @@ db.once('open', () => {
   // we're connected!
   console.log('connected to db')
 })
-
-registerDtnd()
+try {
+  registerDtnd()
+} catch (e) {
+  console.log("no connection to dtnd, did you start the dtnd server?")
+}
