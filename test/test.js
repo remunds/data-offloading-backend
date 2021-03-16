@@ -1,19 +1,21 @@
 const supertest = require('supertest')
 const should = require('should')
+
+require('../app')
 const server = supertest.agent('http://localhost:8000')
 
-function createMacAdress () {
+function createMacAdress() {
   return (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
-        ':' +
-        (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
-        ':' +
-        (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
-        ':' +
-        (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
-        ':' +
-        (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
-        ':' +
-        (Math.round(Math.random() * (99 - 10 + 1) + 10))
+    ':' +
+    (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
+    ':' +
+    (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
+    ':' +
+    (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
+    ':' +
+    (Math.round(Math.random() * (99 - 10 + 1) + 10)) +
+    ':' +
+    (Math.round(Math.random() * (99 - 10 + 1) + 10))
 }
 
 const macAddress = createMacAdress()
@@ -40,8 +42,8 @@ describe('Position', () => {
       .post('/api/setPosition/2')
       .send({
         position:
-                    [100,
-                      0]
+          [100,
+            0]
       })
       .end((err, res) => {
         should.not.exist(err)
@@ -56,8 +58,8 @@ describe('Position', () => {
       .post('/api/setPosition/3')
       .send({
         position:
-                    [40,
-                      200]
+          [40,
+            200]
       })
       .end((err, res) => {
         should.not.exist(err)

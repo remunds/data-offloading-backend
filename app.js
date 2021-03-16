@@ -352,7 +352,7 @@ app.use((error, req, res, next) => {
     })
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`listening at http://localhost:${port}`)
 })
 
@@ -370,3 +370,5 @@ try {
 } catch (e) {
   console.log('no connection to dtnd, did you start the dtnd server?')
 }
+
+module.exports = server
