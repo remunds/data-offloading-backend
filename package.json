@@ -24,5 +24,10 @@
     "nodemon": "^2.0.7",
     "should": "^13.2.3",
     "supertest": "^6.0.1"
+  },
+  "standard": {
+    "ignore": [
+      "/test/"
+    ]
   }
 }
