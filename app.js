@@ -11,7 +11,6 @@ const axios = require('axios')
 
 // general settings
 let config
-let dtndConnection = false
 
 try {
   config = require('./config.json')
@@ -22,7 +21,7 @@ try {
 const boxName = config.nodeName
 const port = config.backendPort
 const dtnd = `${config.dtndIp}:${config.dtndPort}`
-let dtndUuid
+let dtndUuid = false
 
 const multer = require('multer')
 
@@ -60,7 +59,6 @@ async function registerDtnd () {
     console.log(response.data)
     if (!response.data.err) {
       dtndUuid = response.data.uuid
-      dtndConnection = true
       console.log('connected to dtnd')
     } else {
       console.log('cannot connect to dtnd')
@@ -96,7 +94,7 @@ async (req, res) => {
     res.status(500)
     res.send({ error: 'format must be chunk or file' })
   }
-  if (successfullySent === true && dtndConnection) {
+  if (successfullySent === true && dtndUuid) {
     axios({
       method: 'post',
       url: `http://${dtnd}/rest/build`,
