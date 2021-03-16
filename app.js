@@ -1,7 +1,8 @@
 // express server
 const express = require('express')
 const app = express()
-app.use(express.json())
+app.use(express.json({limit: '25mb'}));
+app.use(express.urlencoded({limit: '25mb'}));
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false)
 const { createModel } = require('mongoose-gridfs')
@@ -167,15 +168,17 @@ app.get('/api/getData/:raspberryPiId', async (req, res) => {
   if (!id) {
     res.status(400)
     res.send({ error: 'range is missing' })
+    return
   }
   if (id < 0) {
     res.status(400)
     res.send()
+    return
   }
 
   // connect to raspberryPiId
   const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
-  const fileModel = localDB.model('fs.file', schemas.files)
+  const fileModel = localDB.model('fs.file', schemas.file)
   const documents = await fileModel.find({}).skip(parseInt(id)).limit(1)
   const File = createModel({
     modelName: 'File',
@@ -286,7 +289,7 @@ app.get('/api/register/:macAddress', async (req, res) => {
   // checks if a mac address was sent
   if (deviceMacAddress.search(rePattern) === -1) {
     res.status(400)
-    res.send('not a MAC Address')
+    res.send({error: 'not a MAC Address'})
     return
   }
 
