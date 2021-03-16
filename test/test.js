@@ -169,7 +169,7 @@ describe('postData', () => {
 
   it('post files to backend', (done) => {
     server
-      .post('/api/postData/' + 1 + '?format=chunk')
+      .post('/api/postData/' + 1 + '?format=file')
       .send({
         _id: '602403aa51dd022939c6c2bb',
         length: 91003,
