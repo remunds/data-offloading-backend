@@ -1,11 +1,5 @@
 const mongoose = require('mongoose')
 
-// create schema with all needed fields
-const taskSchema = new mongoose.Schema({
-  title: String,
-  asdf: Number
-})
-
 const deviceSchema = new mongoose.Schema({
   macAddress: String,
   name: Number,
@@ -36,8 +30,6 @@ const errorSchema = new mongoose.Schema({
   error: String
 })
 
-// export the mongoose model with the name Task (creates collection tasks)
-exports.task = taskSchema
 exports.chunk = chunkSchema
 exports.file = fileSchema
 exports.device = deviceSchema

@@ -1,26 +1,31 @@
 // express server
 const express = require('express')
 const app = express()
-app.use(express.json())
+app.use(express.json({ limit: '25mb' }))
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false)
 const { createModel } = require('mongoose-gridfs')
-const { createReadStream, unlinkSync } = require('fs')
+const { createReadStream, unlink } = require('fs')
 const axios = require('axios')
 
 // general settings
-const config = require('./config.json')
+let config
+
+try {
+  config = require('./config.json')
+} catch (err) {
+  console.log('no config file available. Did you run setup.sh?')
+  process.exit(0)
+}
 const boxName = config.nodeName
 const port = config.backendPort
 const dtnd = `${config.dtndIp}:${config.dtndPort}`
-let dtndUuid
+let dtndUuid = false
 
-const fileUpload = require('express-fileupload')
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: './tmp/'
-}))
+const multer = require('multer')
 
+// uploaded files are saved to the uploads directory to handle multipart data
+const upload = multer({ dest: 'uploads/' })
 // schemas
 const schemas = require('./schemas')
 
@@ -29,8 +34,8 @@ const contentType = {
 }
 
 // check if the request body is in JSON format
-// If the current middleware function does not end the request-response cycle, 
-// it must call next() to pass control to the next middleware function. 
+// If the current middleware function does not end the request-response cycle,
+// it must call next() to pass control to the next middleware function.
 // Otherwise, the request will be left hanging.
 function checkForJSON (req, res, next, expectedType) {
   if (!req.is(expectedType)) {
@@ -57,8 +62,8 @@ async function registerDtnd () {
     } else {
       console.log('cannot connect to dtnd')
     }
-  }).catch((err) => {
-    console.log('cannot connect to dtnd', err)
+  }).catch(() => {
+    console.log('cannot connect to dtnd')
   })
 }
 
@@ -88,7 +93,7 @@ async (req, res) => {
     res.status(500)
     res.send({ error: 'format must be chunk or file' })
   }
-  if (successfullySent === true) {
+  if (successfullySent === true && dtndUuid) {
     axios({
       method: 'post',
       url: `http://${dtnd}/rest/build`,
@@ -119,6 +124,8 @@ async (req, res) => {
       res.status(503)
       res.send({ error: 'chunk saved in db but could not etablish connection to dtnd server. No deletion command was send' })
     })
+  } else {
+    res.status(200).send()
   }
 })
 
@@ -126,31 +133,44 @@ async (req, res) => {
 // Example:
 // Query: /api/writeData/
 // Body: contains file as form-data type: 'file' and name: 'sensor'
-app.post('/api/writeData/:raspberryPiId', async (req, res) => {
-  if (!req.files) {
-    res.status(400)
-    res.send({ error: 'no file' })
+app.post('/api/writeData/:raspberryPiId', upload.single('sensor'), async (req, res) => {
+  if (!req.params.raspberryPiId) {
+    res.status(500).send()
     return
   }
-  // unnecessary for box
   const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
-  const File = createModel({
-    modelName: 'File',
+  // create model so that our collections are called fs.files and fs.chunks
+  const fs = createModel({
+    modelName: 'fs',
     connection: localDB
   })
-  const readStream = createReadStream(req.files.sensor.tempFilePath)
-  const options = ({ filename: req.files.sensor.name, contentType: req.files.sensor.mimetype })
-  await File.write(options, readStream, (error, file) => {
-    if (!error) {
-      res.status(200).send(req.body)
+
+  const File = localDB.model('fs.file', schemas.file)
+  const Chunk = localDB.model('fs.chunk', schemas.chunk)
+  // write file to db
+  console.log(req.sensor != null)
+  if (req.file == null) {
+    res.status(500).send()
+    return
+  }
+  const readStream = createReadStream(req.file.path)
+  const options = ({ filename: req.file.originalname, contentType: req.file.mimetype })
+  await fs.write(options, readStream, async (error, file) => {
+    if (error) {
+      res.status(500).send({ error: 'could not chunk file' })
     }
+    console.log('wrote file with id: ' + file._id)
+    // add the field downloads to file and chunks; add timestamp to chunk
+    File.findByIdAndUpdate(file._id, { downloads: 0 }).exec()
+    Chunk.updateMany({ files_id: file._id }, { downloads: 0, timestamp: Date.now() }).exec()
+    unlink(req.file.path, (err) => {
+      if (err) {
+        res.status(500).send({ error: 'could not delete tmp file' })
+      } else {
+        res.status(200).send({ error: '' })
+      }
+    })
   })
-  unlinkSync(req.files.sensor.tempFilePath, (err) => {
-    if (err) {
-      console.log('etwas ist schief gegeangen')
-    }
-  })
-  console.log(req.files.sensor.tempFilePath)
 })
 
 // gets one File from certain Pi
@@ -161,15 +181,17 @@ app.get('/api/getData/:raspberryPiId', async (req, res) => {
   if (!id) {
     res.status(400)
     res.send({ error: 'range is missing' })
+    return
   }
   if (id < 0) {
     res.status(400)
     res.send()
+    return
   }
 
   // connect to raspberryPiId
   const localDB = mongoose.connection.useDb(req.params.raspberryPiId)
-  const fileModel = localDB.model('fs.file', schemas.files)
+  const fileModel = localDB.model('fs.file', schemas.file)
   const documents = await fileModel.find({}).skip(parseInt(id)).limit(1)
   const File = createModel({
     modelName: 'File',
@@ -274,25 +296,25 @@ async (req, res, next) => {
 // Query: /api/register/30:9c:23:de:b0:22
 
 app.get('/api/register/:macAddress', async (req, res) => {
-  const rePattern = '/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/'
+  const rePattern = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
   const deviceMacAddress = req.params.macAddress
 
   // checks if a mac address was sent
   if (deviceMacAddress.search(rePattern) === -1) {
     res.status(400)
-    res.send('not a MAC Address')
+    res.send({ error: 'not a MAC Address' })
     return
   }
 
   // connect to pi0
   const localDB = mongoose.connection.useDb(boxName)
-  const deviceModel = localDB.model('device', schemas.device)
-  let document = await deviceModel.findOne({ macAddress: deviceMacAddress }, 'name').exec()
+  const DeviceModel = localDB.model('device', schemas.device)
+  let document = await DeviceModel.findOne({ macAddress: deviceMacAddress }, 'name').exec()
   if (document) {
     res.status(200)
     res.send({ nodeName: document.name })
   } else {
-    document = await deviceModel.find({}, 'name').sort({ name: -1 }).limit(1).exec()
+    document = await DeviceModel.find({}, 'name').sort({ name: -1 }).limit(1).exec()
     let name
     if (document[0]) {
       name = document[0].name + 1
@@ -300,11 +322,11 @@ app.get('/api/register/:macAddress', async (req, res) => {
       name = 1
     }
 
-    const record = new deviceModel({
+    const record = new DeviceModel({
       macAddress: deviceMacAddress,
       name: name,
       position: [0, 0]
-    }).Save()
+    }).save()
     if (record) {
       res.status(201)
       res.send({ nodeName: name })
@@ -329,7 +351,7 @@ app.use((error, req, res, next) => {
     })
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`listening at http://localhost:${port}`)
 })
 
@@ -342,5 +364,6 @@ db.once('open', () => {
   // we're connected!
   console.log('connected to db')
 })
-
 registerDtnd()
+
+module.exports = server
