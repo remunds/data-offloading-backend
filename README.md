@@ -206,8 +206,5 @@ dtnd is a delay-tolerant networking daemon. It represents a node inside the netw
 https://github.com/dtn7/dtn7-go
 
 # License
-<<<<<<< HEAD
-=======
 
->>>>>>> f154734 (Update README.md)
-This project's code is licensed under the GNU General Public License version 3 (GPL-3.0-or-later).
+This project's code is licensed under the [GNU General Public License version 3 (GPL-3.0-or-later)](LICENSE).
